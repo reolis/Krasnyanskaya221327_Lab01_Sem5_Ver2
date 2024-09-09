@@ -14,13 +14,16 @@ namespace Krasnyanskaya221327_Lab01_Sem5_Ver2
     {
         static int count = 0;
         static int oldCount = 0;
+        private int savedCount = 0;
+        private int N = 0;
+
         public static UDPServer server;
 
         private DateTime moveBackStartTime;
         private bool isMovingBack = false;
         private bool isMovingForward = false;
-        private TimeSpan moveBackDuration = TimeSpan.FromSeconds(3);
-        private int bumpCounter = 0;
+        private TimeSpan moveBackDuration = TimeSpan.FromSeconds(1);
+        private int bumpCount = 0;
 
         public class UDPServer
         {
@@ -297,129 +300,141 @@ namespace Krasnyanskaya221327_Lab01_Sem5_Ver2
                 richTextBox1.SelectionStart = richTextBox1.Text.Length;
                 richTextBox1.ScrollToCaret();
 
-                if (Robot.b == 1 && !isMovingBack && !isMovingForward)
+                // Проверяем, произошло ли столкновение
+                if (UDPServer.b == 1)
                 {
-                    bumpCounter++;
+                    bumpCount++; // Увеличиваем счетчик столкновений
 
-                    // Если это первый удар, двигаемся назад
-                    if (bumpCounter % 2 == 1)
+                    if (bumpCount % 2 == 1)
                     {
-                        Robot.MoveBackWhenBump();
-                        moveBackStartTime = DateTime.Now; // Запоминаем время начала движения назад
-                        isMovingBack = true;
+                        // Нечетное столкновение (например, первое, третье) — начинаем двигаться назад
+                        if (!isMovingBack)
+                        {
+                            savedCount = count;
+                            Robot.MoveBackWhenBump();
+                            moveBackStartTime = DateTime.Now;
+                            isMovingBack = true;
+                        }
                     }
-                    // Если это повторный удар, двигаемся вперед
-                    else if (bumpCounter % 2 == 0)
+                    else
                     {
-                        Robot.MoveStraight();
-                        moveBackStartTime = DateTime.Now; // Запоминаем время начала движения вперед
-                        isMovingForward = true;
-                        bumpCounter = 0; // Сбрасываем счетчик после второго удара
+                        // Четное столкновение (второе, четвертое) — начинаем двигаться вперед
+                        if (isMovingBack)
+                        {
+                            Robot.SetCommand("B", 0);
+                            Robot.MoveStraight();
+                            isMovingBack = false;
+                            isMovingForward = true;
+                        }
                     }
                 }
 
-                // Если робот двигается назад
+                // Логика движения назад после нечетного столкновения
                 if (isMovingBack)
                 {
-                    // Останавливаемся после заданного времени
                     if (DateTime.Now - moveBackStartTime >= moveBackDuration)
                     {
                         Robot.Stop();
                         isMovingBack = false;
+                        count = savedCount; // Возвращаем сохранённое значение count после движения назад
                     }
                     else
                     {
-                        count++;
-                        Robot.SetCommand("N", count);
+                        N++; // Увеличиваем N независимо от count
+                        Robot.SetCommand("N", N);
 
-                        oldCount = count;
                         Robot.UpdateDecodeText();
                         Robot.SendOldCommands();
                         await server.SendRobotDataAsync();
 
                         textBox19.Text = count.ToString();
-
-                        return; // Выходим, чтобы не выполнять другой код
+                        return; // Выходим, чтобы не выполнять дальнейший код
                     }
                 }
 
-                // Если робот двигается вперед после второго удара
+                // Логика движения вперед после четного столкновения
                 if (isMovingForward)
                 {
-                    // Останавливаемся после того же времени движения вперед
-                    if (DateTime.Now - moveBackStartTime >= moveBackDuration)
-                    {
-                        Robot.Stop();
-                        isMovingForward = false;
-                    }
-                    else
-                    {
-                        count++;
-                        Robot.SetCommand("N", count);
-
-                        oldCount = count;
-                        Robot.UpdateDecodeText();
-                        Robot.SendOldCommands();
-                        await server.SendRobotDataAsync();
-
-                        textBox19.Text = count.ToString();
-
-                        return; // Выходим, чтобы не выполнять другой код
-                    }
+                    Robot.MoveStraight(); // Движение вперёд после повторного столкновения
+                    N++; // Увеличиваем N
+                    Robot.SetCommand("N", N);
                 }
-
-                // Обычная логика движения робота, если не двигается назад или вперед
-                if (!isMovingBack && !isMovingForward)
+                else
                 {
+                    // Движение до столкновения
                     if (count <= 10)
                     {
                         Robot.RotateLeft();
                         count++;
-                        Robot.SetCommand("N", count);
                     }
                     else if (count > 10 && count <= 30)
                     {
                         Robot.SetCommand("B", 0);
                         Robot.MoveStraight();
                         count++;
-                        Robot.SetCommand("N", count);
                     }
                     else if (count > 30 && count <= 35)
                     {
                         Robot.SetCommand("F", 0);
                         Robot.RotateRight();
                         count++;
-                        Robot.SetCommand("N", count);
                     }
-                    else if (count > 35 && count <= 136)
+                    else if (count > 35 && count < 138)
                     {
                         Robot.SetCommand("B", 0);
                         Robot.MoveStraight();
                         count++;
-                        Robot.SetCommand("N", count);
                     }
-                    else if (count > 136 && count <= 150)
+                    else if (count >= 138 && count <= 150)
                     {
                         Robot.RotateLeft();
                         count++;
-                        Robot.SetCommand("N", count);
                     }
-                    else if (count > 150 && count <= 165)
+                    else if (count > 150 && count <= 175)
                     {
                         Robot.SetCommand("B", 0);
                         Robot.MoveStraight();
                         count++;
-                        Robot.SetCommand("N", count);
+                    }
+                    else if (count > 175 && count <= 200)
+                    {
+                        Robot.RotateLeft();
+                        count++;
+                    }
+                    else if (count > 200 && count <= 253)
+                    {
+                        Robot.SetCommand("B", 0);
+                        Robot.MoveStraight();
+                        count++;
+                    }
+                    else if (count > 253 && count <= 275)
+                    {
+                        Robot.RotateLeft();
+                        count++;
+                    }
+                    else if (count > 275)
+                    {
+                        Robot.SetCommand("B", 0);
+                        Robot.MoveStraight();
+                        count++;
+                    }
+                    else if (count > 400)
+                    {
+                        Robot.Stop();
+                        count++;
                     }
                     else
                     {
                         Robot.Stop();
                         count++;
-                        Robot.SetCommand("N", count);
                     }
+
+                    // Увеличиваем N независимо от count
+                    N++;
+                    Robot.SetCommand("N", N);
                 }
 
-                oldCount = count;
+                // Обновляем данные робота
                 Robot.UpdateDecodeText();
                 Robot.SendOldCommands();
                 await server.SendRobotDataAsync();
