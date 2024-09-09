@@ -13,7 +13,12 @@ namespace Krasnyanskaya221327_Lab01_Sem5_Ver2
     public partial class Form1 : Form
     {
         static int count = 0;
+        static int oldCount = 0;
         public static UDPServer server;
+
+        private DateTime moveBackStartTime;
+        private bool isMovingBack = false;
+        private TimeSpan moveBackDuration = TimeSpan.FromSeconds(3); 
 
         public class UDPServer
         {
@@ -222,6 +227,11 @@ namespace Krasnyanskaya221327_Lab01_Sem5_Ver2
                 SetCommand("F", 0);
             }
 
+            public static void MoveBackWhenBump()
+            {
+                SetCommand("F", -70);
+            }
+
             public static void FirstRotate(int count)
             {
                 if (count <= 10)
@@ -284,29 +294,87 @@ namespace Krasnyanskaya221327_Lab01_Sem5_Ver2
                 richTextBox1.SelectionStart = richTextBox1.Text.Length;
                 richTextBox1.ScrollToCaret();
 
-                if (count <= 10)
+                if (UDPServer.b == 1 && !isMovingBack)
                 {
-                    Robot.RotateLeft();
-
-                    count++;
-                    Robot.SetCommand("N", count);
+                    Robot.MoveBackWhenBump();
+                    moveBackStartTime = DateTime.Now; 
+                    isMovingBack = true;
                 }
-                else if (count > 10 || count <= 100)
-                {
-                    Robot.MoveStraight();
 
-                    count++;
-                    Robot.SetCommand("N", count);
+                if (isMovingBack)
+                {
+                    if (DateTime.Now - moveBackStartTime >= moveBackDuration)
+                    {
+                        Robot.Stop();
+                        isMovingBack = false;
+                    }
+                    else
+                    {
+                        count++;
+                        Robot.SetCommand("N", count);
+
+                        oldCount = count;
+                        Robot.UpdateDecodeText();
+                        Robot.SendOldCommands();
+                        await server.SendRobotDataAsync();
+
+                        textBox19.Text = count.ToString();
+
+                        return; // Выходим, чтобы не выполнять другой код
+                    }
                 }
                 else
                 {
-                    Robot.Stop();
-
-                    count++;
-                    Robot.SetCommand("N", count);
+                    if (count <= 10)
+                    {
+                        Robot.RotateLeft();
+                        count++;
+                        Robot.SetCommand("N", count);
+                    }
+                    else if (count > 10 && count <= 30)
+                    {
+                        Robot.SetCommand("B", 0);
+                        Robot.MoveStraight();
+                        count++;
+                        Robot.SetCommand("N", count);
+                    }
+                    else if (count > 30 && count <= 35)
+                    {
+                        Robot.SetCommand("F", 0);
+                        Robot.RotateRight();
+                        count++;
+                        Robot.SetCommand("N", count);
+                    }
+                    else if (count > 35 && count <= 145)
+                    {
+                        Robot.SetCommand("B", 0);
+                        Robot.MoveStraight();
+                        count++;
+                        Robot.SetCommand("N", count);
+                    }
+                    else if (count > 145 || count <= 150)
+                    {
+                        Robot.SetCommand("F", 0);
+                        Robot.RotateLeft();
+                        count++;
+                        Robot.SetCommand("N", count);
+                    }
+                    else if (count > 150 || count <= 165)
+                    {
+                        Robot.SetCommand("B", 0);
+                        Robot.MoveStraight();
+                        count++;
+                        Robot.SetCommand("N", count);
+                    }
+                    else
+                    {
+                        Robot.Stop();
+                        count++;
+                        Robot.SetCommand("N", count);
+                    }
                 }
 
-                
+                oldCount = count;
                 Robot.UpdateDecodeText();
                 Robot.SendOldCommands();
                 await server.SendRobotDataAsync();
@@ -319,9 +387,8 @@ namespace Krasnyanskaya221327_Lab01_Sem5_Ver2
                 richTextBox1.SelectionStart = richTextBox1.Text.Length;
                 richTextBox1.ScrollToCaret();
             }
-
-            
         }
+
 
         private void button1_Click(object sender, EventArgs e)
         {
