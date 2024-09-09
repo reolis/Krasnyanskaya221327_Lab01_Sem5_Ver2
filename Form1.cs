@@ -12,7 +12,7 @@ namespace Krasnyanskaya221327_Lab01_Sem5_Ver2
 {
     public partial class Form1 : Form
     {
-        int count = 0;
+        static int count = 0;
         public static UDPServer server;
 
         public class UDPServer
@@ -121,6 +121,7 @@ namespace Krasnyanskaya221327_Lab01_Sem5_Ver2
             public static bool FinalStateGot = false;
             public static int countOfOrders = 0;
             public static int n, s, c, le, re, az, b, d0, d1, d2, d3, d4, d5, d6, d7, l0, l1, l2, l3, l4;
+            public static bool isFirstRotateDone = false, isFirstWayDone = false;
 
             public static void UpdateData(Dictionary<string, int> pairs)
             {
@@ -178,6 +179,87 @@ namespace Krasnyanskaya221327_Lab01_Sem5_Ver2
             {
                 UDPServer.DecodeText["n"] = Commands["N"];
             }
+
+            public static void SendOldCommands()
+            {
+                string oldCommands = JsonConvert.SerializeObject(UDPServer.DecodeText, Formatting.None);
+
+                byte[] data = Encoding.ASCII.GetBytes(oldCommands + "\n");
+
+                UdpClient udpCommands = new UdpClient();
+                IPEndPoint pointServer = new IPEndPoint(server.IpAddress, server.RemotePort);
+                udpCommands.Send(data, data.Length, pointServer);
+
+                string jsonString = JsonConvert.SerializeObject(Commands, Formatting.None);
+                byte[] dataForRobot = Encoding.ASCII.GetBytes(jsonString + "\n");
+
+                udpCommands.Send(dataForRobot, dataForRobot.Length, pointServer);
+            }
+
+            public static void RotateRight()
+            {
+                SetCommand("B", 25);
+            }
+
+            public static void RotateLeft()
+            {
+                SetCommand("B", -25);
+            }
+
+            public static void MoveStraight()
+            {
+                SetCommand("F", 100);
+            }
+
+            public static void MoveBack()
+            {
+                SetCommand("F", -100);
+            }
+
+            public static void Stop()
+            {
+                SetCommand("B", 0);
+                SetCommand("F", 0);
+            }
+
+            public static void FirstRotate(int count)
+            {
+                if (count <= 10)
+                {
+                    RotateLeft();
+                    isFirstRotateDone = true;
+
+                    SetCommand("N", count);
+                    UpdateDecodeText();
+                }
+                else
+                {
+                    Stop();
+
+                    SetCommand("N", count);
+                    UpdateDecodeText();
+                }
+            }
+
+            public static void FirstWay(int count)
+            {
+                if (count > 10 && count <= 100)
+                {
+                    MoveStraight();
+                    isFirstWayDone = true;
+
+                    SetCommand("N", count);
+                    UpdateDecodeText();
+                }
+                else
+                {
+                    Stop();
+
+                    SetCommand("N", count);
+                    UpdateDecodeText();
+                }
+            }
+
         }
 
         public Form1()
@@ -202,11 +284,34 @@ namespace Krasnyanskaya221327_Lab01_Sem5_Ver2
                 richTextBox1.SelectionStart = richTextBox1.Text.Length;
                 richTextBox1.ScrollToCaret();
 
-                Robot.SetCommand("F", 100);
-                Robot.SetCommand("N", count);
+                if (count <= 10)
+                {
+                    Robot.RotateLeft();
 
+                    count++;
+                    Robot.SetCommand("N", count);
+                }
+                else if (count > 10 || count <= 100)
+                {
+                    Robot.MoveStraight();
+
+                    count++;
+                    Robot.SetCommand("N", count);
+                }
+                else
+                {
+                    Robot.Stop();
+
+                    count++;
+                    Robot.SetCommand("N", count);
+                }
+
+                
                 Robot.UpdateDecodeText();
+                Robot.SendOldCommands();
                 await server.SendRobotDataAsync();
+
+                textBox19.Text = count.ToString();
             }
             else
             {
@@ -215,7 +320,7 @@ namespace Krasnyanskaya221327_Lab01_Sem5_Ver2
                 richTextBox1.ScrollToCaret();
             }
 
-            count++;
+            
         }
 
         private void button1_Click(object sender, EventArgs e)
@@ -233,6 +338,38 @@ namespace Krasnyanskaya221327_Lab01_Sem5_Ver2
         {
 
         }
+
+        public void MoveRobot()
+        {
+            if (!Robot.isFirstRotateDone)
+            {
+                Robot.FirstRotate(count);
+                Robot.UpdateDecodeText();
+                if (Robot.isFirstRotateDone)
+                {
+                    Robot.FirstWay(count);
+                    Robot.UpdateDecodeText();
+                }
+            }
+            else
+            {
+                if (count > 10 && count <= 100)
+                {
+                    Robot.MoveStraight();
+                    Robot.UpdateDecodeText();
+                }
+                else if (count > 100)
+                {
+                    Robot.RotateRight();
+                    Robot.UpdateDecodeText();
+                }
+            }
+
+            count++;
+
+            Robot.SetCommand("N", count);
+        }
+
 
         public void SplitDataToTextBoxs()
         {
