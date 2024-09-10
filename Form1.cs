@@ -1,6 +1,7 @@
 ﻿using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
@@ -102,6 +103,11 @@ namespace Krasnyanskaya221327_Lab01_Sem5_Ver2
                     d5 = pairs["d5"];
                     d6 = pairs["d6"];
                     d7 = pairs["d7"];
+                    l0 = pairs["l0"];
+                    l1 = pairs["l1"];
+                    l2 = pairs["l2"];
+                    l3 = pairs["l3"];
+                    l4 = pairs["l4"];
                 }
                 else
                 {
@@ -566,7 +572,74 @@ namespace Krasnyanskaya221327_Lab01_Sem5_Ver2
                 {
                     textBox18.Text = chr.Value.ToString();
                 }
+                if (chr.Key == "l0")
+                {
+                    textBox24.Text = chr.Value.ToString();
+                }
+                if (chr.Key == "l1")
+                {
+                    textBox23.Text = chr.Value.ToString();
+                }
+                if (chr.Key == "l2")
+                {
+                    textBox22.Text = chr.Value.ToString();
+                }
+                if (chr.Key == "l3")
+                {
+                    textBox21.Text = chr.Value.ToString();
+                }
+                if (chr.Key == "l4")
+                {
+                    textBox20.Text = chr.Value.ToString();
+                }
             }
+        }
+
+        private void Form1_Load(object sender, EventArgs e)
+        {
+            string solutionDirectory = Directory.GetParent(AppDomain.CurrentDomain.BaseDirectory).Parent.Parent.Parent.FullName;
+            string filePath = Path.Combine(solutionDirectory, "textbox_data.json");
+
+            if (File.Exists(filePath))
+            {
+                string json = File.ReadAllText(filePath);
+                var data = JsonConvert.DeserializeObject<dynamic>(json);
+
+                textBox1.Text = data.TextBox1;
+                textBox2.Text = data.TextBox2;
+                textBox3.Text = data.TextBox3;
+            }
+        }
+
+        private void groupBox1_Enter(object sender, EventArgs e)
+        {
+
+        }
+
+        private void label11_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void label13_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void Form1_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            var data = new
+            {
+                TextBox1 = textBox1.Text,
+                TextBox2 = textBox2.Text,
+                TextBox3 = textBox3.Text
+            };
+
+            string solutionDirectory = Directory.GetParent(AppDomain.CurrentDomain.BaseDirectory).Parent.Parent.Parent.FullName;
+            string filePath = Path.Combine(solutionDirectory, "textbox_data.json");
+
+            string json = JsonConvert.SerializeObject(data, Formatting.Indented);
+            File.WriteAllText(filePath, json);
         }
     }
 }
